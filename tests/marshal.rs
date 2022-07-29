@@ -41,6 +41,20 @@ fn marshal_ascii_string_test() {
 }
 
 #[test]
+fn marshal_unicode_string_test() {
+    // Does not require surrogates
+    assert_eq!(
+        r#""\u2764""#.to_owned(),
+        JsonString("❤".to_owned()).marshal()
+    );
+    // Requires surrogates
+    assert_eq!(
+        r#""\ud83e\udd80""#.to_owned(),
+        JsonString("🦀".to_owned()).marshal()
+    );
+}
+
+#[test]
 fn marshal_quoted_string_test() {
     assert_eq!(
         r#""\"test\"""#.to_owned(),
@@ -78,6 +92,14 @@ fn marshal_int_object_test() {
         "assertion failed: valid serializations\n\t`{}`\ndo not contain serialization\n\t`{}`",
         valid.join("`\n\t`"),
         &marshaled
+    );
+}
+
+#[test]
+fn marshal_unicode_key_object_test() {
+    assert_eq!(
+        r#"{"\ud83e\udd80": 0}"#,
+        JsonObject(HashMap::from([("🦀".to_owned(), JsonInt(0))])).marshal()
     );
 }
 
