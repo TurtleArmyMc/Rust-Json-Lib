@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use json::{unmarshal::Unmarshalable, Element, Element::*};
+use json::{Element, Element::*, UnmarshalError, Unmarshalable};
 
 #[test]
 fn unmarshal_int_test() {
@@ -57,6 +57,54 @@ fn unmarshal_float_negative_exponent_test() {
     assert_eq!(f64::unmarshal_json("3.0e-3".chars()).unwrap(), 0.003);
     assert_eq!(f64::unmarshal_json("3E-3".chars()).unwrap(), 0.003);
     assert_eq!(f64::unmarshal_json("3.0E-3".chars()).unwrap(), 0.003);
+}
+
+#[test]
+fn unmarshal_float_leading_decimal_test() {
+    assert_eq!(
+        f64::unmarshal_json(".3".chars()).unwrap_err(),
+        UnmarshalError::UnexpectedChar {
+            c: '.',
+            row: 1,
+            col: 1
+        }
+    );
+    assert_eq!(
+        f64::unmarshal_json("-.3".chars()).unwrap_err(),
+        UnmarshalError::UnexpectedChar {
+            c: '.',
+            row: 1,
+            col: 2
+        }
+    );
+}
+
+#[test]
+fn unmarshal_float_trailing_decimal_test() {
+    assert_eq!(
+        f64::unmarshal_json("3.".chars()).unwrap_err(),
+        UnmarshalError::EndOfChars
+    );
+}
+
+#[test]
+fn unmarshal_float_trailing_exponent_test() {
+    assert_eq!(
+        f64::unmarshal_json("3e".chars()).unwrap_err(),
+        UnmarshalError::EndOfChars
+    );
+    assert_eq!(
+        f64::unmarshal_json("3.0e".chars()).unwrap_err(),
+        UnmarshalError::EndOfChars
+    );
+    assert_eq!(
+        f64::unmarshal_json("3E".chars()).unwrap_err(),
+        UnmarshalError::EndOfChars
+    );
+    assert_eq!(
+        f64::unmarshal_json("3.0E".chars()).unwrap_err(),
+        UnmarshalError::EndOfChars
+    );
 }
 
 #[test]
@@ -152,6 +200,14 @@ fn unmarshal_quoted_string_test() {
 }
 
 #[test]
+fn unmarshal_unterminated_string_test() {
+    assert_eq!(
+        String::unmarshal_json(r#""test"#.chars()).unwrap_err(),
+        UnmarshalError::EndOfChars
+    );
+}
+
+#[test]
 fn unmarshal_empty_object_test() {
     assert_eq!(
         HashMap::<String, HashMap<String, i64>>::unmarshal_json("{}".chars()).unwrap(),
@@ -194,6 +250,18 @@ fn unmarshal_single_int_object_test() {
         HashMap::<String, i64>::unmarshal_json(r#"{"a": 0}"#.chars()).unwrap(),
         HashMap::<String, i64>::from([("a".to_owned(), 0)]),
     );
+    assert_eq!(
+        HashMap::<String, i64>::unmarshal_json(r#"{"a":0}"#.chars()).unwrap(),
+        HashMap::<String, i64>::from([("a".to_owned(), 0)]),
+    );
+}
+
+#[test]
+fn unmarshal_single_overriden_int_object_test() {
+    assert_eq!(
+        HashMap::<String, i64>::unmarshal_json(r#"{"a": 0, "a": 1}"#.chars()).unwrap(),
+        HashMap::<String, i64>::from([("a".to_owned(), 1)]),
+    );
 }
 
 #[test]
@@ -209,6 +277,58 @@ fn unmarshal_unicode_key_object_test() {
     assert_eq!(
         HashMap::<String, i64>::unmarshal_json(r#"{"\ud83e\udd80": 0}"#.chars()).unwrap(),
         HashMap::from([("🦀".to_owned(), 0)])
+    );
+}
+
+#[test]
+fn unmarshal_unquoted_key_object_test() {
+    assert_eq!(
+        HashMap::<String, i64>::unmarshal_json(r#"{a: 0}"#.chars()).unwrap_err(),
+        UnmarshalError::UnexpectedChar {
+            c: 'a',
+            row: 1,
+            col: 2
+        }
+    );
+}
+
+#[test]
+fn unmarshal_unterminated_object_test() {
+    assert_eq!(
+        HashMap::<String, i64>::unmarshal_json(r#"{"#.chars()).unwrap_err(),
+        UnmarshalError::EndOfChars
+    );
+    assert_eq!(
+        HashMap::<String, i64>::unmarshal_json(r#"{"a": 0"#.chars()).unwrap_err(),
+        UnmarshalError::EndOfChars
+    );
+    assert_eq!(
+        HashMap::<String, i64>::unmarshal_json(r#"{"a": 0,"#.chars()).unwrap_err(),
+        UnmarshalError::EndOfChars
+    );
+}
+
+#[test]
+fn unmarshal_object_leading_comma_test() {
+    assert_eq!(
+        HashMap::<String, i64>::unmarshal_json(r#"{,}"#.chars()).unwrap_err(),
+        UnmarshalError::UnexpectedChar {
+            c: ',',
+            row: 1,
+            col: 2
+        }
+    );
+}
+
+#[test]
+fn unmarshal_object_trailing_comma_test() {
+    assert_eq!(
+        HashMap::<String, i64>::unmarshal_json(r#"{"a": 0,}"#.chars()).unwrap_err(),
+        UnmarshalError::UnexpectedChar {
+            c: '}',
+            row: 1,
+            col: 9
+        }
     );
 }
 
@@ -284,13 +404,36 @@ fn unmarshal_optional_int_list_test() {
 #[test]
 fn unmarshal_mixed_list_element_test() {
     assert_eq!(
-        Element::unmarshal_json(r#"[1, 2.0, null, true, false]"#.chars()).unwrap(),
+        Element::unmarshal_json(r#"[{}, [], "", 1, 2.0, true, false, null]"#.chars()).unwrap(),
         JsonList(vec![
+            JsonObject(HashMap::new()),
+            JsonList(Vec::new()),
+            JsonString(String::new()),
             JsonInt(1),
             JsonFloat(2.0),
-            JsonNull,
             JsonBool(true),
             JsonBool(false),
+            JsonNull,
         ])
+    );
+}
+
+#[test]
+fn unmarshal_unterminated_list_test() {
+    assert_eq!(
+        Vec::<Option<()>>::unmarshal_json(r#"["#.chars()).unwrap_err(),
+        UnmarshalError::EndOfChars
+    );
+}
+
+#[test]
+fn unmarshal_trailing_comma_list_test() {
+    assert_eq!(
+        Vec::<i64>::unmarshal_json(r#"[1,]"#.chars()).unwrap_err(),
+        UnmarshalError::UnexpectedChar {
+            c: ']',
+            row: 1,
+            col: 4
+        }
     );
 }
