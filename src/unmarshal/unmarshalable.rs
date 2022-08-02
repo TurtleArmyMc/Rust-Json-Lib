@@ -1,6 +1,6 @@
 use std::str::Chars;
 
-use super::UnmarshalIter;
+use super::unmarshal_iter::UnmarshalIter;
 
 pub trait Unmarshalable: Sized {
     /// Unmarshals the type using characters provided from the unmarshaler.

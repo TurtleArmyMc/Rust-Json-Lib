@@ -3,7 +3,9 @@ use std::{
     iter,
 };
 
-use super::{UnmarshalError, UnmarshalIter, Unmarshalable};
+use crate::Unmarshalable;
+
+use super::{unmarshal_iter::UnmarshalIter, unmarshalable::UnmarshalError};
 
 impl<T: Unmarshalable> Unmarshalable for HashMap<String, T> {
     fn unmarshal_json_with_state(u: &mut UnmarshalIter) -> Result<Self, UnmarshalError> {

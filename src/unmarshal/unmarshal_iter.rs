@@ -1,6 +1,6 @@
 use std::{iter::Peekable, str::Chars};
 
-use super::UnmarshalError;
+use super::unmarshalable::UnmarshalError;
 
 /// Stores the remaining characters for unmarshaling.
 pub struct UnmarshalIter<'a> {
@@ -39,7 +39,7 @@ impl<'a> UnmarshalIter<'a> {
     }
 
     pub fn peek_non_whitespace(&mut self) -> Option<&char> {
-        while let Some(c) = self.peek() && c.is_whitespace() {
+        while let Some(_) = self.peek().filter(|c| c.is_whitespace()) {
             self.next();
         }
         self.peek()

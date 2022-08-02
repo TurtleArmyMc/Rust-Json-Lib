@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use json::{Element, Element::*, UnmarshalError, Unmarshalable};
+use json::{Element, Element::*, Unmarshalable, UnmarshalError};
 
 #[test]
 fn unmarshal_int_test() {

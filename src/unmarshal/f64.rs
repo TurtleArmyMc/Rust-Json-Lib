@@ -1,4 +1,6 @@
-use crate::unmarshal::{UnmarshalError, UnmarshalIter, Unmarshalable};
+use crate::Unmarshalable;
+
+use super::{unmarshal_iter::UnmarshalIter, unmarshalable::UnmarshalError};
 
 impl Unmarshalable for f64 {
     fn unmarshal_json_with_state(u: &mut UnmarshalIter) -> Result<Self, UnmarshalError> {

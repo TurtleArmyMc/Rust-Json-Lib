@@ -5,12 +5,12 @@ extern crate test;
 mod test_data;
 use std::hint::black_box;
 
-use json::Unmarshalable;
+use json::{self, Marshalable, Unmarshalable};
 use test::Bencher;
 
 fn marshal_repeatedly(m: &json::Element) {
     for _ in 0..1000 {
-        m.marshal();
+        m.marshal_json();
     }
 }
 

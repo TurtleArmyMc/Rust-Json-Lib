@@ -3,10 +3,9 @@ pub mod element;
 pub mod f64;
 pub mod i64;
 pub mod list;
+pub mod marshalable;
 pub mod null;
 pub mod object;
 pub mod string;
-pub mod unmarshal_iter;
-pub mod unmarshalable;
 
-pub use unmarshalable::UnmarshalError;
+pub use marshalable::Marshalable;
